@@ -33,18 +33,6 @@ kernel = kernel / np.sum(kernel)
 
 @cuda.jit
 def gaussian_blur(inp, out, kern):
-    # x, y, channel = cuda.grid(3)
-    # if x < inp.shape[0] and y < inp.shape[1] and channel < im_array.shape[2]:
-    #     msize = kern.shape[0] // 2
-    #     s = 0
-    #     for i in range(-msize, msize + 1):
-    #         for j in range(-msize, msize + 1):
-    #             u = x + i
-    #             v = y + j
-    #             if u < 0 or u >= inp.shape[0] or v < 0 or v >= inp.shape[1]:
-    #                 continue
-    #             s += inp[u, v, channel] * kern[i + msize, j + msize]
-    #     out[x, y, channel] = s
     x, y = cuda.grid(2)
     if x < inp.shape[0] and y < inp.shape[1]:
         msize = kern.shape[0] // 2
@@ -53,7 +41,7 @@ def gaussian_blur(inp, out, kern):
             for j in range(-msize, msize + 1):
                 u = x + i
                 v = y + j
-                if u < 0 or u >= inp.shape[0] or v < 0 or v >= inp.shape[1]:
+                if not (0 <= u < inp.shape[0]) or not (0 <= v < inp.shape[1]):
                     u, v = x, y
                 r += inp[u, v, 0] * kern[i + msize, j + msize]
                 g += inp[u, v, 1] * kern[i + msize, j + msize]
@@ -68,7 +56,6 @@ cuda_output = cuda.device_array(im_array.shape, dtype=np.uint8)
 
 size_x = math.ceil(im_array.shape[0] / args.tx)
 size_y = math.ceil(im_array.shape[1] / args.ty)
-# gaussian_blur[(size_x, size_y, im_array.shape[2]), (args.tx, args.ty, 1)](cuda_input, cuda_output, kernel)
 
 from datetime import datetime
 
